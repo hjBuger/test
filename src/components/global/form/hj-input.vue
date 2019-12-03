@@ -21,6 +21,7 @@
             emitValue(ev) {
                 this.$emit('input', ev.target.value);
                 this.$emit('change', ev.target.value);
+                this.$parent.$emit('validate');
             }
         },
     }

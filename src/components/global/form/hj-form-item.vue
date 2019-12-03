@@ -4,7 +4,7 @@
             <label v-if="label" :class="{'form-item-must': !!prop}">{{label}}</label>
             <div><slot></slot></div>
         </div>
-        <p>{{msg}}</p>
+        <p class="hj-form-err">{{msg}}</p>
     </div>
 </template>
 
@@ -45,9 +45,14 @@
                 })
             }
         },
+        mounted(){
+            this.$on('validate',this.validate);
+        }
     }
 </script>
 
 <style scoped>
-
+    .hj-form-err{
+        color:red;
+    }
 </style>
