@@ -1,7 +1,16 @@
+import Vue from 'vue'
 let vm = new Vue();
 let baseUrl = vm.$planServerUrl;
 
 class WaitRequest {
+    static init(vm){
+        WaitRequest.prototype.vm = vm;
+    }
+
+    getVm(){
+        console.log(new Date().getTime() + ': ',this.vm);
+    }
+
     get(path, params = {}) {
         return this.createRequest(path, params, 'get');
     }
@@ -37,3 +46,9 @@ class WaitRequest {
         })
     }
 }
+WaitRequest.prototype.vm = null;
+Vue.prototype.$init = function () {
+    WaitRequest.init(this);
+};
+
+export let waitRequest = new WaitRequest();

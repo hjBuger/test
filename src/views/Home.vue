@@ -9,11 +9,14 @@
                 <hj-input type="password" v-model="dataModel.password"></hj-input>
             </hj-form-item>
         </hj-form>
-        <p>{{`${dataModel.username}/${dataModel.password}`}}</p>
+        <p>{{`${dataModel.username}/${dataModel.password}`}}</p><br/>
+        <sapi-upload-file v-model="uploadList" first-char="upper"></sapi-upload-file>
     </div>
 </template>
 
 <script>
+    import {waitRequest} from '../common/utils/tools.js'
+    import test from '../common/test'
     export default {
         name: 'home',
         data() {
@@ -27,17 +30,25 @@
                     password:[{required:true,message:'请输入密码', trigger: ['change']}]
                 },
                 searchValue: '',
-                randomId:[]
+                randomId:[],
+                uploadList:[{
+                    FilePath:'/path/upload',
+                    FileName:'test',
+                    FileSize:'1024kb',
+                    Extension:'.jpg',
+                    UploadDate:'2019-12-19',
+                    Uploader:'admin',
+                    UploaderId:'adminId',
+                    id:'id-123456'
+                }]
             }
         },
         components: {},
         methods:{
-            init(){
 
-            },
         },
         created() {
-            this.init();
+
         }
     }
 </script>
