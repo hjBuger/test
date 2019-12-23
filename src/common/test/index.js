@@ -11,3 +11,5 @@ class Test {
         console.log('this is method bindEvent');
     }
 }
+
+
