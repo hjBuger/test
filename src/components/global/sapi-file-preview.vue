@@ -33,6 +33,9 @@
                 fileList:[],
                 imageDomELs: [],
                 currentIndex: 0,
+                currentItem:null,
+                previousIndex: 0,
+                previousItem:null,
                 liItems: [],
                 len: 0,
                 canNext: true,
@@ -158,12 +161,9 @@
             mouseWheelHandle(){
                 let imageView = this.$refs.imageView;
                 let scale = 1;
-                imageView.addEventListener('mousewheel', () => {
-                    clearTimeout(this.mousewheelTimeout);
-                    this.mousewheelTimeout = setTimeout(() => {
-                        scale += 0.1;
-                        this.setStyle(this.liItems[this.currentIndex], { transform: `scale(${scale})`});
-                    },120);
+                imageView.addEventListener('mousewheel', (ev) => {
+                    let type = ev.wheelDeltaY < 0 ? 'min' : 'max';
+                    this.changeScale(type, 0.3);
                 },false)
             },
             //初始化选中项
@@ -172,16 +172,33 @@
                 lis[this.currentIndex].className = 'li-show';
             },
             //改变缩放
-            changeScale(type){
+            changeScale(type, coefficient = 0.2){
+                this.liItems[this.currentIndex].setAttribute('rotate', 0);
+                let scale = this.liItems[this.currentIndex].getAttribute('scale') || '1';
+                scale = type === 'max' ? +scale + coefficient  : +scale - coefficient;
+                scale = scale < 0.2 ? 0.2 : scale;
+                scale = scale > 2.5 ? 2.5 : scale;
 
+                this.liItems[this.currentIndex].setAttribute('scale', scale + '');
+                this.setStyle(this.liItems[this.currentIndex], {transform: `scale(${ scale })`});
             },
             //还原
             refresh(){
-
+                this.liItems[this.previousIndex].style = '';
+                this.liItems[this.currentIndex].style = '';
+                this.liItems[this.previousIndex].setAttribute('rotate', 0);
+                this.liItems[this.currentIndex].setAttribute('rotate', 0);
+                this.liItems[this.previousIndex].setAttribute('scale', '1');
+                this.liItems[this.currentIndex].setAttribute('scale', '1');
             },
             //旋转
             rotate(type){
+                this.liItems[this.currentIndex].setAttribute('scale', '1');
+                let rotate = parseInt(this.liItems[this.currentIndex].getAttribute('rotate') || 0);
+                rotate = type === 'right' ? rotate + 90 : rotate - 90;
 
+                this.liItems[this.currentIndex].setAttribute('rotate', rotate);
+                this.setStyle(this.liItems[this.currentIndex], {transform: `rotate(${ rotate }deg)`});
             },
             //下一张
             next(type){
@@ -189,18 +206,18 @@
                 //当前和下一张数据处理
                 this.canNext = false;
                 let isNext = type === 'next';
-                let now = isNext ? this.currentIndex ++ : this.currentIndex --;
+                this.previousIndex = isNext ? this.currentIndex ++ : this.currentIndex --;
                 this.currentIndex = isNext ? this.currentIndex % this.len : (this.currentIndex < 0 ? this.len - 1 : this.currentIndex);
 
                 //动画类名
                 let hide = isNext ? `li-hide-left` : `li-hide-right`;
                 let show = isNext ? `li-show-left` : `li-show-right`;
 
-                this.liItems[now].className = hide;
+                this.liItems[this.previousIndex].className = hide;
                 this.liItems[this.currentIndex].className = show;
 
                 //动画结束处理
-                this.handelAnimationEnd(this.liItems[now],'hide');
+                this.handelAnimationEnd(this.liItems[this.previousIndex],'hide');
                 this.handelAnimationEnd(this.liItems[this.currentIndex],'show');
 
             },
@@ -214,6 +231,7 @@
                     li.className = className;
                     vm.canNext = true;
                     li.removeEventListener('animationend', listener);
+                    vm.refresh();
                 }
             },
             //获取图片列表
@@ -329,6 +347,15 @@
                     },120);
                 }, false)
             },
+            //获取transform值
+            transformValue(tf){
+                let rot;
+                return ``;
+            },
+            //移除属性
+            removeAttribute(obj, attrs = []){
+                attrs.forEach(attr => obj.removeAttribute(attr));
+            },
             //设置DOM对象style值
             setStyle(obj, attrs = {}){
                 Object.keys(attrs).forEach(key => obj.style[key] = attrs[key]);
@@ -427,6 +454,8 @@
                 opacity:0;
                 align-items: center;
                 justify-content: center;
+                transform-origin: center center;
+                transition: transform .15s;
                 &:first-child{
                     left:0;
                     opacity:1;
