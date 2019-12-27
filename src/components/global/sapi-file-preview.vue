@@ -1,23 +1,20 @@
 <template>
     <div class="sapi-file-preview" ref="sapiFilePreview" :class="{'preview-fullscreen': fullscreen}" v-show="visible">
         <div class="image-preview-box" ref="imagePreviewBox">
-            <div class="image-header">
-                <span class="image-header-title">图片标题图片标题图片标题图片标题图片标题图片标题</span>
+            <!-- 头部区域 -->
+            <div class="image-header" ref="imageHeader">
+                <span class="image-header-title" :title="previewTitle">{{previewTitle}}</span>
                 <span class="image-header-close el-icon-close" @click="close"></span>
             </div>
+            <!-- 主体区域 -->
             <div class="image-view" ref="imageView">
                 <ul>
                     <li v-for="item in fileList" ref="liItem"><img :src="item" ref="imageFiles"/></li>
                 </ul>
             </div>
+            <!-- 底部区域 -->
             <div class="image-footer">
-                <span class="el-icon-arrow-left" @click="next"></span>
-                <span class="el-icon-arrow-right" @click="next('next')"></span>
-                <span class="el-icon-zoom-in" @click="changeScale('max')"></span>
-                <span class="el-icon-zoom-out" @click="changeScale('min')"></span>
-                <span class="el-icon-refresh-left" @click="rotate('left')"></span>
-                <span class="el-icon-refresh-right" @click="rotate('right')"></span>
-                <span class="el-icon-refresh"  @click="refresh"></span>
+                <span v-for="item in imageFooterData" :class="item.className" @click="item.action(item.params)" :title="item.name" v-show="item.isShow"></span>
             </div>
         </div>
     </div>
@@ -28,32 +25,123 @@
         name: "sapi-file-preview",
         data() {
             return {
+                previewTitle:'图片预览',
                 resizeTimeout: null,
                 mousewheelTimeout: null,
-                visible: true,
+                visible: false,
                 scale: 1,
                 fileList:[],
                 imageDomELs: [],
                 currentIndex: 0,
                 liItems: [],
                 len: 0,
-                canNext: true
+                canNext: true,
+                animationDelay: '.5s',
+                //底部按钮数据
+                imageFooterData:[
+                    {
+                        id: 'previous',
+                        name:'上一张',
+                        className: 'el-icon-arrow-left',
+                        action: this.next,
+                        params: 'previous',
+                        isShow: true
+                    },
+                    {
+                        id: 'next',
+                        name:'下一张',
+                        className: 'el-icon-arrow-right',
+                        action: this.next,
+                        params: 'next',
+                        isShow: true
+                    },
+                    {
+                        id: 'maxScale',
+                        name:'放大',
+                        className: 'el-icon-zoom-in',
+                        action: this.changeScale,
+                        params: 'max',
+                        isShow: true
+                    },{
+                        id: 'minScale',
+                        name:'缩小',
+                        className: 'el-icon-zoom-out',
+                        action: this.changeScale,
+                        params: 'min',
+                        isShow: true
+                    },
+                    {
+                        id: 'leftRotate',
+                        name:'左旋转',
+                        className: 'el-icon-refresh-left',
+                        action: this.rotate,
+                        params: 'left',
+                        isShow: true
+                    },
+                    {
+                        id: 'rightRotate',
+                        name:'右旋转',
+                        className: 'el-icon-refresh-right',
+                        action: this.rotate,
+                        params: 'right',
+                        isShow: true
+                    },
+                    {
+                        id: 'refresh',
+                        name:'还原',
+                        className: 'el-icon-refresh',
+                        action: this.refresh,
+                        params: '',
+                        isShow: true
+                    }
+                ],
+                defaultSize:{
+                    width: 750,
+                    height: 500
+                }
             }
         },
         props: {
+            value:[Boolean, String],
+            //文件路径列表
             files: {
-                type: [String,Object,Array],
+                type: [String, Array],
                 default: ''
             },
+            //窗口宽高
             width: String,
             height: String,
-            previewExtend: Function,
+            //是否全屏
             fullscreen: {
+                type: Boolean,
+                default: false
+            },
+            /**
+            * 图片响应尺寸
+            * content：宽或高100%、另一属性auto
+            * auto：容器满足原尺寸则显示原尺寸,否则content布局
+            * cover：铺满容器（会被隐藏部分视图）
+            * ***/
+            sizing:{
+                type: String,
+                default: 'content'
+            },
+            //拖拽范围限制，true则限制在可视区
+            dragLimit:{
                 type: Boolean,
                 default: false
             }
         },
+        watch: {
+            value(val) {
+                if(val) {
+                    this.resetData();
+                }
+                this.visible = val;
+            }
+        },
         methods: {
+            //初始化
             initData(){
                 this.imageDomELs = this.$refs.imageFiles || [];
                 this.liItems = this.$refs.liItem || [];
@@ -62,6 +150,11 @@
                 this.currentHandle(this.liItems);
                 this.mouseWheelHandle();
             },
+            //全屏
+            fullScreenAction(){
+
+            },
+            //mousewheel事件处理
             mouseWheelHandle(){
                 let imageView = this.$refs.imageView;
                 let scale = 1;
@@ -73,32 +166,57 @@
                     },120);
                 },false)
             },
+            //初始化选中项
             currentHandle(lis){
-                lis.forEach(li => this.setStyle(li, { left: '100%'}));
-                this.setStyle(lis[this.currentIndex], { left: '0'});
+                lis.forEach(li => li.className = 'li-hide');
+                lis[this.currentIndex].className = 'li-show';
             },
+            //改变缩放
             changeScale(type){
 
             },
+            //还原
             refresh(){
 
             },
+            //旋转
             rotate(type){
 
             },
+            //下一张
             next(type){
                 if(!this.canNext) return;
+                //当前和下一张数据处理
                 this.canNext = false;
                 let isNext = type === 'next';
                 let now = isNext ? this.currentIndex ++ : this.currentIndex --;
                 this.currentIndex = isNext ? this.currentIndex % this.len : (this.currentIndex < 0 ? this.len - 1 : this.currentIndex);
-                this.setStyle(this.liItems[now], { left: '-100%', opacity: 0});
-                this.setStyle(this.liItems[this.currentIndex], { left: '0', opacity: 1});
-                setTimeout(() => {
-                    this.setStyle(this.liItems[now], { left: '100%'});
-                    this.canNext = true;
-                },500)
+
+                //动画类名
+                let hide = isNext ? `li-hide-left` : `li-hide-right`;
+                let show = isNext ? `li-show-left` : `li-show-right`;
+
+                this.liItems[now].className = hide;
+                this.liItems[this.currentIndex].className = show;
+
+                //动画结束处理
+                this.handelAnimationEnd(this.liItems[now],'hide');
+                this.handelAnimationEnd(this.liItems[this.currentIndex],'show');
+
             },
+            //监听animationEnd事件
+            handelAnimationEnd(li,type){
+                let vm = this;
+                let className = type === 'hide' ? 'li-hide' : 'li-show';
+                li.addEventListener('animationend', listener, false);
+
+                function listener() {
+                    li.className = className;
+                    vm.canNext = true;
+                    li.removeEventListener('animationend', listener);
+                }
+            },
+            //获取图片列表
             getFileList(){
                 let type = Object.prototype.toString.call(this.files);
                 switch (type) {
@@ -109,11 +227,11 @@
                 if(type === 'string') this.fileList.push(this.files);
                 if(type === 'array') this.fileList.push(...this.files);
             },
+            //初始化图片宽高
             setImgSize(imageFiles){
                 if(!imageFiles || imageFiles.length < 1) return;
                 imageFiles.forEach(img => {
                     let iScale = +(img.naturalWidth / img.naturalHeight).toFixed(2);
-                    console.log(img.naturalWidth,img.naturalHeight,iScale,this.scale);
                     if( iScale > this.scale){
                         img.style.width = '100%';
                         img.style.height = 'auto';
@@ -123,23 +241,46 @@
                     }
                 })
             },
+            //重置
+            resetData(){
+                this.getFileList();
+                this.settingsReset();
+            },
+            settingsReset(){
+                this.$nextTick(function () {
+                    this.setWinSize();
+                    this.winResize();
+                    if(!this.fullscreen){
+                        this.previewBoxDrag();
+                    }
+                    this.initData();
+                })
+            },
+            //拖拽
             previewBoxDrag(){
                 let vm = this;
+                let imageHeader = this.$refs.imageHeader;
                 let oDrag = this.$refs.sapiFilePreview;
-                let aLen = oDrag.length;
-                oDrag.onmousedown = function (ev) {
+                //容器尺寸
+                let boxWidth = this.width ? parseInt(this.width) : this.defaultSize.width;
+                let boxHeight = this.height ? parseInt(this.height) : this.defaultSize.height;
+
+                imageHeader.onmousedown = function (ev) {
                     ev = ev || event;
-                    let _this = this;
-                    let disX = ev.clientX - this.offsetLeft;
-                    let disY = ev.clientY - this.offsetTop;
+                    let _this = oDrag;
+                    let disX = ev.clientX - _this.offsetLeft;
+                    let disY = ev.clientY - _this.offsetTop;
 
                     document.onmousemove = function (ev1) {
                         ev1 = ev1 || event;
                         let L = ev1.clientX - disX;
                         let T = ev1.clientY - disY;
 
-                        //L = vm.limitHandle(L,0,document.documentElement.clientWidth - _this.offsetWidth);
-                        //T = vm.limitHandle(T,0,document.documentElement.clientHeight - _this.offsetHeight);
+                        //拖拽范围限制
+                        if(this.dragLimit){
+                            L = vm.limitHandle(L, boxWidth / 2, document.documentElement.clientWidth - boxWidth / 2);
+                            T = vm.limitHandle(T, boxHeight / 2, document.documentElement.clientHeight - boxHeight / 2);
+                        }
 
                         _this.style.left = L + "px";
                         _this.style.top = T + "px";
@@ -153,18 +294,23 @@
                     return false;
                 }
             },
+            //范围限制
             limitHandle(val,minVal,maxVal){
                 return Math.min(Math.max(val,minVal),maxVal);
             },
+            //设置窗口尺寸
             setWinSize() {
+                //获取可视区宽高
                 let winWidth = document.documentElement.clientWidth || document.body.clientWidth;
                 let winHeight = document.documentElement.clientHeight || document.body.clientHeight;
                 let previewBox = this.$refs.sapiFilePreview;
                 this.scale = (winWidth / winHeight).toFixed(2);
 
+                //弹窗形式控制
                 if(!this.fullscreen){
-                    winWidth = this.width ? parseInt(this.width) : 750;
-                    winHeight = this.height ? parseInt(this.height) : 500;
+                    winWidth = this.width ? parseInt(this.width) : this.defaultSize.width;
+                    winHeight = this.height ? parseInt(this.height) : this.defaultSize.height;
+
                     //30是.image-view左右两边padding和，80是header+footer高，20是.image-view上下padding和
                     this.scale = +(winWidth - 30) / (winHeight - 80 - 20);
                 }
@@ -174,6 +320,7 @@
 
 
             },
+            //监听window。onresize
             winResize(){
                 window.addEventListener('resize', () => {
                     clearTimeout(this.resizeTimeout);
@@ -182,29 +329,21 @@
                     },120);
                 }, false)
             },
+            //设置DOM对象style值
             setStyle(obj, attrs = {}){
-                for(let key in attrs){
-                    if(attrs.hasOwnProperty(key)){
-                        obj.style[key] = attrs[key];
-                    }
-                }
+                Object.keys(attrs).forEach(key => obj.style[key] = attrs[key]);
             },
+            //关闭
             close(){
-
+                this.$emit('input', false);
             }
         },
         created() {
             this.getFileList();
         },
         mounted() {
-            this.$nextTick(function () {
-                this.setWinSize();
-                this.winResize();
-                if(!this.fullscreen){
-                    this.previewBoxDrag();
-                }
-                this.initData();
-            })
+            this.settingsReset();
+            this.visible = this.value;
         }
     }
 </script>
@@ -239,6 +378,7 @@
             align-items: center;
             justify-content: space-between;
             box-shadow: 0 0 5px rgba(255,255,255,.3) inset;
+            cursor: move;
         }
         .image-header-title{
             padding: 0 15px;
@@ -284,13 +424,32 @@
             li{
                 position: absolute;
                 left: 100%;
-                transition: left .5s, opacity .5s;
                 opacity:0;
                 align-items: center;
                 justify-content: center;
                 &:first-child{
                     left:0;
                     opacity:1;
+                }
+                &.li-hide-left{
+                    animation: to-left-hide .5s;
+                }
+                &.li-show-left{
+                    animation: to-left-show .5s;
+                }
+                &.li-hide-right{
+                    animation: to-right-hide .5s;
+                }
+                &.li-show-right{
+                    animation: to-right-show .5s;
+                }
+                &.li-hide{
+                    left: 100%;
+                    opacity:0;
+                }
+                &.li-show{
+                    left: 0;
+                    opacity: 1;
                 }
             }
             img{
@@ -299,6 +458,7 @@
                 width: 100%;
                 height: 100%;
                 object-fit: cover;
+                user-select: none;
             }
         }
         .image-footer{
@@ -328,5 +488,53 @@
     }
     .preview-fullscreen{
         border-radius: 0;
+    }
+    .li-hide{
+        left: 100%;
+        opacity:0;
+    }
+    .li-show{
+        left: 0;
+        opacity: 1;
+    }
+    @keyframes to-left-hide {
+        from{
+            left:0;
+            opacity:1;
+        }
+        to{
+            left: -100%;
+            opacity:0;
+        }
+    }
+    @keyframes to-left-show {
+        from{
+            left: 100%;
+            opacity:0;
+        }
+        to{
+            left: 0;
+            opacity: 1;
+        }
+    }
+    @keyframes to-right-hide {
+        from{
+            left:0;
+            opacity:1;
+        }
+        to{
+            left: 100%;
+            opacity:0;
+        }
+    }
+    @keyframes to-right-show {
+        from{
+            left: -100%;
+            opacity:0;
+        }
+        to{
+            left: 0;
+            opacity: 1;
+        }
     }
 </style>

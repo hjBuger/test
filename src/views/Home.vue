@@ -1,7 +1,7 @@
 <template>
     <div class="home">
         <!--<el-button type="primary">预览</el-button>-->
-        <sapi-file-preview :files="files"></sapi-file-preview>
+        <sapi-file-preview :files="files" :fullscreen="false" v-model="visible"></sapi-file-preview>
     </div>
 </template>
 
@@ -12,6 +12,7 @@
         name: 'home',
         data() {
             return {
+                visible: true,
                 files:['/images/logo.png','/images/a1.png','/images/22.png','/images/timg.jpg']
             }
         },
