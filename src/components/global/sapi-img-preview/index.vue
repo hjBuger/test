@@ -9,5 +9,6 @@
 </script>
 
 <style scoped>
+    @import "./fonts/iconfont.css";
 
 </style>
