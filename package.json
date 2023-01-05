@@ -16,8 +16,8 @@
     "vuex": "^3.0.1"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "^3.0.4",
-    "@vue/cli-service": "^3.0.4",
+    "@vue/cli-plugin-babel": "^3.12.1",
+    "@vue/cli-service": "^5.0.8",
     "axios": "^0.18.0",
     "jquery": "^3.4.1",
     "less": "^3.0.4",
